@@ -301,12 +301,15 @@ DS.Model = Ember.Object.extend(Ember.Evented, LoadPromise, {
   },
 
   hasManyDidChange: function(key) {
-    var cachedValue = this.cacheFor(key);
+    var cachedValue = this.cacheFor(key),
+        store = get(this, 'store'),
+        adapter = store.adapterForType(this.constructor);
 
     if (cachedValue) {
-      var type = get(this.constructor, 'relationshipsByName').get(key).type;
-      var store = get(this, 'store');
-      var ids = this._data[key] || [];
+      var relationship = get(this.constructor, 'relationshipsByName').get(key),
+          type = relationship.type,
+          ids = this._data[key] || [],
+          dirtyReferences;
 
       var references = map(ids, function(id) {
         if (typeof id === 'object') {
@@ -320,6 +323,13 @@ DS.Model = Ember.Object.extend(Ember.Evented, LoadPromise, {
         }
         return store.referenceForId(type, id);
       });
+
+      if (adapter.shouldPreserveDirtyRecords(relationship)) {
+        dirtyReferences = get(cachedValue, 'content').map(function(reference) {
+          return get(reference, 'record.isDirty') ? reference : null;
+        });
+        references = references.concat(Ember.A(dirtyReferences).compact());
+      }
 
       set(cachedValue, 'content', Ember.A(references));
     }

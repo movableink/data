@@ -84,7 +84,7 @@ module("the REST adapter", {
     adapter = Adapter.create({
       ajax: function(url, type, hash) {
         var self = this;
-        return new Ember.RSVP.Promise(function(resolve, reject){
+        var promise = new Ember.RSVP.Promise(function(resolve, reject){
           hash = hash || {};
           var success = hash.success;
 
@@ -107,6 +107,8 @@ module("the REST adapter", {
             });
           };
         });
+
+        return promise;
       }
     });
 
@@ -144,6 +146,11 @@ module("the REST adapter", {
     Role.toString = function() {
       return "App.Role";
     };
+  },
+
+  teardown: function() {
+    adapter.destroy();
+    store.destroy();
   }
 });
 
@@ -193,7 +200,7 @@ test("creating a person makes a POST to /people, with the data hash", function()
   enabledFlags(person, ['isLoaded', 'isDirty', 'isNew', 'isValid']);
 
   // setup
-  store.commit();
+  var promise = store.commit();
 
   // test
   stateEquals(person, 'loaded.created.inFlight');
@@ -205,10 +212,12 @@ test("creating a person makes a POST to /people, with the data hash", function()
   // setup
   ajaxHash.success({ person: { id: 1, name: "Tom Dale" } });
 
-  // test
-  stateEquals(person, 'loaded.saved');
-  enabledFlags(person, ['isLoaded', 'isValid']);
-  equal(person, store.find(Person, 1), "it is now possible to retrieve the person by the ID supplied");
+  promise.then(function() {
+    // test
+    stateEquals(person, 'loaded.saved');
+    enabledFlags(person, ['isLoaded', 'isValid']);
+    equal(person, store.find(Person, 1), "it is now possible to retrieve the person by the ID supplied");
+  });
 });
 
 test("singular creations can sideload data", function() {
@@ -221,7 +230,7 @@ test("singular creations can sideload data", function() {
   enabledFlags(person, ['isLoaded', 'isDirty', 'isNew', 'isValid']);
 
   // setup
-  store.commit();
+  var promise = store.commit();
 
   // test
   stateEquals(person, 'loaded.created.inFlight');
@@ -237,11 +246,13 @@ test("singular creations can sideload data", function() {
   });
   group = store.find(Group, 1);
 
-  // test
-  stateEquals(person, 'loaded.saved');
-  enabledFlags(person, ['isLoaded', 'isValid']);
-  equal(person, store.find(Person, 1), "it is now possible to retrieve the person by the ID supplied");
-  equal(get(group, 'name'), "Group 1", "the data sideloaded successfully");
+  promise.then(function() {
+    // test
+    stateEquals(person, 'loaded.saved');
+    enabledFlags(person, ['isLoaded', 'isValid']);
+    equal(person, store.find(Person, 1), "it is now possible to retrieve the person by the ID supplied");
+    equal(get(group, 'name'), "Group 1", "the data sideloaded successfully");
+  });
 });
 
 test("updating a person makes a PUT to /people/:id with the data hash", function() {
@@ -262,7 +273,7 @@ test("updating a person makes a PUT to /people/:id with the data hash", function
   enabledFlags(person, ['isLoaded', 'isDirty', 'isValid']);
 
   // setup
-  store.commit();
+  var promise = store.commit();
 
   // test
   stateEquals(person, 'loaded.updated.inFlight');
@@ -274,11 +285,13 @@ test("updating a person makes a PUT to /people/:id with the data hash", function
   // setup
   ajaxHash.success({ person: { id: 1, name: "Brohuda Brokatz" } });
 
-  // test
-  stateEquals(person, 'loaded.saved');
-  enabledFlags(person, ['isLoaded', 'isValid']);
-  equal(person, store.find(Person, 1), "the same person is retrieved by the same ID");
-  equal(get(person, 'name'), "Brohuda Brokatz", "the hash should be updated");
+  promise.then(function() {
+    // test
+    stateEquals(person, 'loaded.saved');
+    enabledFlags(person, ['isLoaded', 'isValid']);
+    equal(person, store.find(Person, 1), "the same person is retrieved by the same ID");
+    equal(get(person, 'name'), "Brohuda Brokatz", "the hash should be updated");
+  });
 });
 
 
@@ -300,7 +313,7 @@ test("updates are not required to return data", function() {
   enabledFlags(person, ['isLoaded', 'isDirty', 'isValid']);
 
   // setup
-  store.commit();
+  var promise = store.commit();
 
   // test
   stateEquals(person, 'loaded.updated.inFlight');
@@ -311,11 +324,13 @@ test("updates are not required to return data", function() {
   // setup
   ajaxHash.success();
 
-  // test
-  stateEquals(person, 'loaded.saved');
-  enabledFlags(person, ['isLoaded', 'isValid']);
-  equal(person, store.find(Person, 1), "the same person is retrieved by the same ID");
-  equal(get(person, 'name'), "Brohuda Brokatz", "the data is preserved");
+  promise.then(function() {
+    // test
+    stateEquals(person, 'loaded.saved');
+    enabledFlags(person, ['isLoaded', 'isValid']);
+    equal(person, store.find(Person, 1), "the same person is retrieved by the same ID");
+    equal(get(person, 'name'), "Brohuda Brokatz", "the data is preserved");
+  });
 });
 
 test("singular updates can sideload data", function() {
@@ -337,7 +352,7 @@ test("singular updates can sideload data", function() {
   enabledFlags(person, ['isLoaded', 'isDirty', 'isValid']);
 
   // setup
-  store.commit();
+  var promise = store.commit();
 
   // test
   stateEquals(person, 'loaded.updated.inFlight');
@@ -352,11 +367,13 @@ test("singular updates can sideload data", function() {
   });
   group = store.find(Group, 1);
 
-  // test
-  stateEquals(person, 'loaded.saved');
-  enabledFlags(person, ['isLoaded', 'isValid']);
-  equal(person, store.find(Person, 1), "the same person is retrieved by the same ID");
-  equal(get(group, 'name'), "Group 1", "the data sideloaded successfully");
+  promise.then(function() {
+    // test
+    stateEquals(person, 'loaded.saved');
+    enabledFlags(person, ['isLoaded', 'isValid']);
+    equal(person, store.find(Person, 1), "the same person is retrieved by the same ID");
+    equal(get(group, 'name'), "Group 1", "the data sideloaded successfully");
+  });
 });
 
 test("deleting a person makes a DELETE to /people/:id", function() {
@@ -377,7 +394,7 @@ test("deleting a person makes a DELETE to /people/:id", function() {
   enabledFlags(person, ['isLoaded', 'isDirty', 'isDeleted', 'isValid']);
 
   // setup
-  store.commit();
+  var promise = store.commit();
 
   // test
   stateEquals(person, 'deleted.inFlight');
@@ -388,9 +405,11 @@ test("deleting a person makes a DELETE to /people/:id", function() {
   // setup
   ajaxHash.success();
 
-  // test
-  stateEquals(person, 'deleted.saved');
-  enabledFlags(person, ['isLoaded', 'isDeleted', 'isValid']);
+  promise.then(function() {
+    // test
+    stateEquals(person, 'deleted.saved');
+    enabledFlags(person, ['isLoaded', 'isDeleted', 'isValid']);
+  });
 });
 
 test("singular deletes can sideload data", function() {
@@ -412,7 +431,7 @@ test("singular deletes can sideload data", function() {
   enabledFlags(person, ['isLoaded', 'isDirty', 'isDeleted', 'isValid']);
 
   // setup
-  store.commit();
+  var promise = store.commit();
 
   // test
   stateEquals(person, 'deleted.inFlight');
@@ -424,13 +443,17 @@ test("singular deletes can sideload data", function() {
   ajaxHash.success({
     groups: [{ id: 1, name: "Group 1" }]
   });
-  group = store.find(Group, 1);
 
-  // test
-  stateEquals(person, 'deleted.saved');
-  enabledFlags(person, ['isLoaded', 'isDeleted', 'isValid']);
-  equal(get(group, 'name'), "Group 1", "the data sideloaded successfully");
+  promise.then(function() {
+    group = store.find(Group, 1);
+
+    // test
+    stateEquals(person, 'deleted.saved');
+    enabledFlags(person, ['isLoaded', 'isDeleted', 'isValid']);
+    equal(get(group, 'name'), "Group 1", "the data sideloaded successfully");
+  });
 });
+
 
 // Remove this note -- I am leaving this test broken because it's an interesting case.
 // should store.find(Person) return back an object that will be fulfilled later?
@@ -446,6 +469,7 @@ test("finding all people makes a GET to /people", function() {
 
   // setup
   ajaxHash.success({ people: [{ id: 1, name: "Yehuda Katz" }] });
+
   person = people.objectAt(0);
 
   // test
@@ -471,15 +495,18 @@ test("finding all can sideload data", function() {
     groups: [{ id: 1, name: "Group 1", person_ids: [ 1 ] }],
     people: [{ id: 1, name: "Yehuda Katz" }]
   });
-  people = get(groups.objectAt(0), 'people');
-  person = people.objectAt(0);
 
-  // test
-  stateEquals(person, 'loaded.saved');
-  enabledFlags(groups, ['isLoaded'], recordArrayFlags);
-  enabledFlags(people, ['isLoaded'], manyArrayFlags);
-  enabledFlags(person, ['isLoaded', 'isValid']);
-  equal(person, store.find(Person, 1), "the record is now in the store, and can be looked up by ID without another Ajax request");
+  groups.then(function() {
+    people = get(groups.objectAt(0), 'people');
+    person = people.objectAt(0);
+
+    // test
+    stateEquals(person, 'loaded.saved');
+    enabledFlags(groups, ['isLoaded'], recordArrayFlags);
+    enabledFlags(people, ['isLoaded'], manyArrayFlags);
+    enabledFlags(person, ['isLoaded', 'isValid']);
+    equal(person, store.find(Person, 1), "the record is now in the store, and can be looked up by ID without another Ajax request");
+  });
 });
 
 test("finding all people with since makes a GET to /people", function() {
@@ -494,6 +521,7 @@ test("finding all people with since makes a GET to /people", function() {
 
   // setup
   ajaxHash.success({ meta: { since: '123'}, people: [{ id: 1, name: "Yehuda Katz" }] });
+
   people = store.find(Person);
 
   // test
@@ -504,6 +532,7 @@ test("finding all people with since makes a GET to /people", function() {
 
   // setup
   ajaxHash.success({ meta: { since: '1234'}, people: [{ id: 2, name: "Paul Chavard" }] });
+
   person = people.objectAt(1);
 
   // test
@@ -565,6 +594,7 @@ test("meta and since are configurable", function() {
 
   // setup
   ajaxHash.success({ metaObject: {sinceToken: '1234'}, people: [{ id: 2, name: "Paul Chavard" }] });
+
   person = people.objectAt(1);
 
   // test
@@ -664,6 +694,7 @@ test("finding many people by a list of IDs", function() {
       { id: 3, name: "Yehuda Katz" }
     ]
   });
+
   rein = people.objectAt(0);
   tom = people.objectAt(1);
   yehuda = people.objectAt(2);
@@ -702,6 +733,7 @@ test("finding many people by a list of IDs doesn't rely on the returned array or
       { id: 3, name: "Yehuda Katz" }
     ]
   });
+
   rein = people.objectAt(0);
   tom = people.objectAt(1);
   yehuda = people.objectAt(2);
@@ -718,6 +750,7 @@ test("finding many people by a list of IDs doesn't rely on the returned array or
   equal(get(rein, 'id'), 1);
   equal(get(tom, 'id'), 2);
   equal(get(yehuda, 'id'), 3);
+
 });
 
 test("additional data can be sideloaded in a GET with many IDs", function() {
@@ -791,6 +824,7 @@ test("finding people by a query", function() {
       { id: 3, name: "Yehuda Katz" }
     ]
   });
+
   rein = people.objectAt(0);
   tom = people.objectAt(1);
   yehuda = people.objectAt(2);
@@ -874,7 +908,7 @@ test("creating several people (with bulkCommit) makes a POST to /people, with a 
   enabledFlagsForArray(people, ['isLoaded', 'isDirty', 'isNew', 'isValid']);
 
   // setup
-  store.commit();
+  var promise = store.commit();
 
   // test
   statesEqual(people, 'loaded.created.inFlight');
@@ -886,11 +920,13 @@ test("creating several people (with bulkCommit) makes a POST to /people, with a 
   // setup
   ajaxHash.success({ people: [ { id: 1, name: "Tom Dale" }, { id: 2, name: "Yehuda Katz" } ] });
 
-  // test
-  statesEqual(people, 'loaded.saved');
-  enabledFlagsForArray(people, ['isLoaded', 'isValid']);
-  equal(tom, store.find(Person, 1), "it is now possible to retrieve the person by the ID supplied");
-  equal(yehuda, store.find(Person, 2), "it is now possible to retrieve the person by the ID supplied");
+  promise.then(function() {
+    // test
+    statesEqual(people, 'loaded.saved');
+    enabledFlagsForArray(people, ['isLoaded', 'isValid']);
+    equal(tom, store.find(Person, 1), "it is now possible to retrieve the person by the ID supplied");
+    equal(yehuda, store.find(Person, 2), "it is now possible to retrieve the person by the ID supplied");
+  });
 });
 
 test("bulk commits can sideload data", function() {
@@ -907,7 +943,7 @@ test("bulk commits can sideload data", function() {
   enabledFlagsForArray(people, ['isLoaded', 'isDirty', 'isNew', 'isValid']);
 
   // setup
-  store.commit();
+  var promise = store.commit();
 
   // test
   statesEqual(people, 'loaded.created.inFlight');
@@ -921,16 +957,19 @@ test("bulk commits can sideload data", function() {
     people: [ { id: 1, name: "Tom Dale" }, { id: 2, name: "Yehuda Katz" } ],
     groups: [ { id: 1, name: "Group 1" } ]
   });
-  group = store.find(Group, 1);
 
-  // test
-  stateEquals(group, 'loaded.saved');
-  statesEqual(people, 'loaded.saved');
-  enabledFlags(group, ['isLoaded', 'isValid']);
-  enabledFlagsForArray(people, ['isLoaded', 'isValid']);
-  equal(tom, store.find(Person, 1), "it is now possible to retrieve the person by the ID supplied");
-  equal(yehuda, store.find(Person, 2), "it is now possible to retrieve the person by the ID supplied");
-  equal(get(group, 'name'), "Group 1", "the data sideloaded successfully");
+  promise.then(function() {
+    group = store.find(Group, 1);
+
+    // test
+    stateEquals(group, 'loaded.saved');
+    statesEqual(people, 'loaded.saved');
+    enabledFlags(group, ['isLoaded', 'isValid']);
+    enabledFlagsForArray(people, ['isLoaded', 'isValid']);
+    equal(tom, store.find(Person, 1), "it is now possible to retrieve the person by the ID supplied");
+    equal(yehuda, store.find(Person, 2), "it is now possible to retrieve the person by the ID supplied");
+    equal(get(group, 'name'), "Group 1", "the data sideloaded successfully");
+  });
 });
 
 test("updating several people (with bulkCommit) makes a PUT to /people/bulk with the data hash Array", function() {
@@ -958,7 +997,7 @@ test("updating several people (with bulkCommit) makes a PUT to /people/bulk with
   enabledFlagsForArray(people, ['isLoaded', 'isDirty', 'isValid']);
 
   // setup
-  store.commit();
+  var promise = store.commit();
 
   // test
   statesEqual(people, 'loaded.updated.inFlight');
@@ -972,12 +1011,13 @@ test("updating several people (with bulkCommit) makes a PUT to /people/bulk with
     { id: 1, name: "Brohuda Brokatz" },
     { id: 2, name: "Brocarl Brolerche" }
   ]});
-
-  // test
-  statesEqual(people, 'loaded.saved');
-  enabledFlagsForArray(people, ['isLoaded', 'isValid']);
-  equal(yehuda, store.find(Person, 1), "the same person is retrieved by the same ID");
-  equal(carl, store.find(Person, 2), "the same person is retrieved by the same ID");
+  promise.then(function() {
+    // test
+    statesEqual(people, 'loaded.saved');
+    enabledFlagsForArray(people, ['isLoaded', 'isValid']);
+    equal(yehuda, store.find(Person, 1), "the same person is retrieved by the same ID");
+    equal(carl, store.find(Person, 2), "the same person is retrieved by the same ID");
+  });
 });
 
 test("bulk updates can sideload data", function() {
@@ -1006,7 +1046,7 @@ test("bulk updates can sideload data", function() {
   enabledFlagsForArray(people, ['isLoaded', 'isDirty', 'isValid']);
 
   // setup
-  store.commit();
+  var promise = store.commit();
 
   // test
   statesEqual(people, 'loaded.updated.inFlight');
@@ -1023,16 +1063,19 @@ test("bulk updates can sideload data", function() {
     ],
     groups: [{ id: 1, name: "Group 1" }]
   });
-  group = store.find(Group, 1);
 
-  // test
-  statesEqual(people, 'loaded.saved');
-  stateEquals(group, 'loaded.saved');
-  enabledFlagsForArray(people, ['isLoaded', 'isValid']);
-  enabledFlags(group, ['isLoaded', 'isValid']);
-  equal(yehuda, store.find(Person, 1), "the same person is retrieved by the same ID");
-  equal(carl, store.find(Person, 2), "the same person is retrieved by the same ID");
-  equal(get(group, 'name'), "Group 1", "the data sideloaded successfully");
+  promise.then(function() {
+    group = store.find(Group, 1);
+
+    // test
+    statesEqual(people, 'loaded.saved');
+    stateEquals(group, 'loaded.saved');
+    enabledFlagsForArray(people, ['isLoaded', 'isValid']);
+    enabledFlags(group, ['isLoaded', 'isValid']);
+    equal(yehuda, store.find(Person, 1), "the same person is retrieved by the same ID");
+    equal(carl, store.find(Person, 2), "the same person is retrieved by the same ID");
+    equal(get(group, 'name'), "Group 1", "the data sideloaded successfully");
+  });
 });
 
 test("deleting several people (with bulkCommit) makes a DELETE to /people/bulk", function() {
@@ -1060,7 +1103,7 @@ test("deleting several people (with bulkCommit) makes a DELETE to /people/bulk",
   enabledFlagsForArray(people, ['isLoaded', 'isDirty', 'isDeleted', 'isValid']);
 
   // setup
-  store.commit();
+  var promise = store.commit();
 
   // test
   statesEqual(people, 'deleted.inFlight');
@@ -1072,9 +1115,11 @@ test("deleting several people (with bulkCommit) makes a DELETE to /people/bulk",
   // setup
   ajaxHash.success();
 
-  // test
-  statesEqual(people, 'deleted.saved');
-  enabledFlagsForArray(people, ['isLoaded', 'isDeleted', 'isValid']);
+  promise.then(function() {
+    // test
+    statesEqual(people, 'deleted.saved');
+    enabledFlagsForArray(people, ['isLoaded', 'isDeleted', 'isValid']);
+  });
 });
 
 test("bulk deletes can sideload data", function() {
@@ -1103,7 +1148,7 @@ test("bulk deletes can sideload data", function() {
   enabledFlagsForArray(people, ['isLoaded', 'isDirty', 'isDeleted', 'isValid']);
 
   // setup
-  store.commit();
+  var promise = store.commit();
 
   // test
   statesEqual(people, 'deleted.inFlight');
@@ -1116,14 +1161,17 @@ test("bulk deletes can sideload data", function() {
   ajaxHash.success({
     groups: [{ id: 1, name: "Group 1" }]
   });
-  group = store.find(Group, 1);
 
-  // test
-  statesEqual(people, 'deleted.saved');
-  stateEquals(group, 'loaded.saved');
-  enabledFlagsForArray(people, ['isLoaded', 'isDeleted', 'isValid']);
-  enabledFlags(group, ['isLoaded', 'isValid']);
-  equal(get(group, 'name'), "Group 1", "the data sideloaded successfully");
+  promise.then(function() {
+    group = store.find(Group, 1);
+
+    // test
+    statesEqual(people, 'deleted.saved');
+    stateEquals(group, 'loaded.saved');
+    enabledFlagsForArray(people, ['isLoaded', 'isDeleted', 'isValid']);
+    enabledFlags(group, ['isLoaded', 'isValid']);
+    equal(get(group, 'name'), "Group 1", "the data sideloaded successfully");
+  });
 });
 
 test("if you specify a namespace then it is prepended onto all URLs", function() {
@@ -1244,7 +1292,7 @@ test("When a record with a belongsTo is saved the foreign key should be sent.", 
   enabledFlags(person, ['isLoaded', 'isDirty', 'isNew', 'isValid']);
 
   // setup
-  store.commit();
+  var promise = store.commit();
 
   // test
   stateEquals(personType, 'loaded.saved');
@@ -1258,28 +1306,32 @@ test("When a record with a belongsTo is saved the foreign key should be sent.", 
   // setup
   ajaxHash.success({ person: { name: 'Sam Woodard', person_type_id: 1}});
 
-  // test
-  stateEquals(personType, 'loaded.saved');
-  stateEquals(person, 'loaded.saved');
-  enabledFlags(personType, ['isLoaded', 'isValid']);
-  enabledFlags(person, ['isLoaded', 'isValid']);
+  promise.then(function() {
+    // test
+    stateEquals(personType, 'loaded.saved');
+    stateEquals(person, 'loaded.saved');
+    enabledFlags(personType, ['isLoaded', 'isValid']);
+    enabledFlags(person, ['isLoaded', 'isValid']);
+  });
 });
 
 test("creating a record with a 422 error marks the records as invalid", function(){
   // setup
   var person, mockXHR;
   person = store.createRecord(Person, { name: "" });
-  store.commit();
+  var promise = store.commit();
   mockXHR = {
     status:       422,
     responseText: JSON.stringify({ errors: { name: ["can't be blank"]} })
   };
   ajaxHash.error.call(ajaxHash.context, mockXHR);
 
-  // test
-  stateEquals(person, 'loaded.created.invalid');
-  enabledFlags(person, ['isLoaded', 'isDirty', 'isNew']);
-  deepEqual(person.get('errors'), { name: ["can't be blank"]}, "the person has the errors");
+  promise.then(null, function() {
+    // test
+    stateEquals(person, 'loaded.created.invalid');
+    enabledFlags(person, ['isLoaded', 'isDirty', 'isNew']);
+    deepEqual(person.get('errors'), { name: ["can't be blank"]}, "the person has the errors");
+  });
 });
 
 test("updating a record with a 422 error marks the records as invalid", function(){
@@ -1303,7 +1355,7 @@ test("updating a record with a 422 error marks the records as invalid", function
   enabledFlags(person, ['isLoaded', 'isDirty', 'isValid']);
 
   // setup
-  store.commit();
+  var promise = store.commit();
 
   // test
   stateEquals(person, 'loaded.updated.inFlight');
@@ -1316,10 +1368,12 @@ test("updating a record with a 422 error marks the records as invalid", function
   };
   ajaxHash.error.call(ajaxHash.context, mockXHR);
 
-  // test
-  stateEquals(person, 'loaded.updated.invalid');
-  enabledFlags(person, ['isLoaded', 'isDirty']);
-  deepEqual(person.get('errors'), { name: ["can't be blank"], updatedAt: ["can't be blank"] }, "the person has the errors");
+  promise.then(function() {
+    // test
+    stateEquals(person, 'loaded.updated.invalid');
+    enabledFlags(person, ['isLoaded', 'isDirty']);
+    deepEqual(person.get('errors'), { name: ["can't be blank"], updatedAt: ["can't be blank"] }, "the person has the errors");
+  });
 });
 
 test("creating a record with a 500 error marks the record as error", function() {
@@ -1332,7 +1386,7 @@ test("creating a record with a 500 error marks the record as error", function() 
   enabledFlags(person, ['isLoaded', 'isDirty', 'isNew', 'isValid']);
 
   // setup
-  store.commit();
+  var promise = store.commit();
 
   // test
   stateEquals(person, 'loaded.created.inFlight');
@@ -1343,11 +1397,15 @@ test("creating a record with a 500 error marks the record as error", function() 
     status:       500,
     responseText: 'Internal Server Error'
   };
+
   ajaxHash.error.call(ajaxHash.context, mockXHR);
 
-  // test
-  stateEquals(person, 'error');
-  enabledFlags(person, ['isError', 'isValid']);
+  promise.then(null, function() {
+
+    // test
+    stateEquals(person, 'error');
+    enabledFlags(person, ['isError', 'isValid']);
+  });
 });
 
 test("updating a record with a 500 error marks the record as error", function() {
@@ -1368,7 +1426,7 @@ test("updating a record with a 500 error marks the record as error", function() 
   enabledFlags(person, ['isLoaded', 'isDirty', 'isValid']);
 
   // setup
-  store.commit();
+  var promise = store.commit();
 
   // test
   stateEquals(person, 'loaded.updated.inFlight');
@@ -1381,9 +1439,11 @@ test("updating a record with a 500 error marks the record as error", function() 
   };
   ajaxHash.error.call(ajaxHash.context, mockXHR);
 
-  // test
-  stateEquals(person, 'error');
-  enabledFlags(person, ['isError', 'isValid']);
+  promise.then(null, function() {
+    // test
+    stateEquals(person, 'error');
+    enabledFlags(person, ['isError', 'isValid']);
+  });
 });
 
 var TestError = function(message) {

@@ -509,6 +509,19 @@ DS.Adapter = Ember.Object.extend(DS._Mappable, {
   /**
     @private
 
+    Determines whether dirty records for a particular association
+    should be preserved in the face of re-materialization.
+
+    @param {Object} association the association meta information
+    @return {Boolean}
+  */
+  shouldPreserveDirtyRecords: function(association) {
+    return false;
+  },
+
+  /**
+    @private
+
     This method recursively climbs the superclass hierarchy and
     registers any class-registered transforms on the adapter's
     serializer.
@@ -746,9 +759,10 @@ DS.Adapter = Ember.Object.extend(DS._Mappable, {
     @method commit
     @params {DS.Store}  store
     @params {Ember.Map} commitDetails   see `DS.Transaction#commitDetails`.
+    @params relationshipChanges
   */
-  commit: function(store, commitDetails) {
-    this.save(store, commitDetails);
+  commit: function(store, commitDetails, relationshipChanges) {
+    return this.save(store, commitDetails, relationshipChanges);
   },
 
   /**
@@ -796,9 +810,7 @@ DS.Adapter = Ember.Object.extend(DS._Mappable, {
     @property {DS.Model} record
     @return   {Boolean}  `true` to save, `false` to not. Defaults to true.
   */
-  shouldSave: function(record) {
-    return true;
-  },
+  shouldSave: Ember.K,
 
   /**
     Implement this method in a subclass to handle the creation of
